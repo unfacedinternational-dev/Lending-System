@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Check</title>
+    <style>
+        /* Basic Page Reset */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Prevent scrollbars during lockdown */
+            font-family: sans-serif;
+        }
+
+        /* Initial State: Normal background */
+        #main-view {
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .claim-btn {
+            padding: 20px 40px;
+            font-size: 24px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Lockdown State: Hidden by default */
+        #lockdown-overlay {
+            display: none; /* Hidden until triggered */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999; /* On top of everything */
+            
+            /* The Police Siren Animation */
+            background: repeating-linear-gradient(
+                to bottom,
+                #ff0000 0%,
+                #ff0000 10%,
+                #0000ff 10%,
+                #0000ff 20%
+            );
+            background-size: 100% 200px;
+            animation: siren-sweep 0.5s linear infinite;
+            
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Keyframes for the flashing light effect */
+        @keyframes siren-sweep {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 -200px; } /* Moves the gradient up */
+        }
+
+        /* The Unlock Box */
+        .unlock-panel {
+            background: rgba(255, 255, 255, 0.9); /* Semi-transparent white */
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .instruction-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .pin-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- View 1: Before clicking -->
+    <div id="main-view">
+        <button class="claim-btn" onclick="activateSiren()">Access System</button>
+    </div>
+
+    <!-- View 2: The Police Siren Lockdown (Initially Hidden) -->
+    <div id="lockdown-overlay">
+        <div class="unlock-panel">
+            <div class="instruction-text">SYSTEM ALERT</div>
+            <button class="pin-btn" onclick="requestPin()">Lights Off (Enter PIN)</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // Set your secret numeric PIN here.
+        const ADMIN_PIN = "1984";
+        // ---------------------
+
+        const mainView = document.getElementById('main-view');
+        const lockdownOverlay = document.getElementById('lockdown-overlay');
+
+        function activateSiren() {
+            // 1. Try to request fullscreen to take over the screen
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            }
+
+            // 2. Switch the views
+            mainView.style.display = 'none';
+            lockdownOverlay.style.display = 'flex';
+        }
+
+        function requestPin() {
+            // Use browser's built-in prompt
+            let userInputs = prompt("Enter Admin PIN to restore normal operation:");
+
+            if (userInputs === ADMIN_PIN) {
+                // CORRECT PIN MATCHED
+
+                // 1. Exit Fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari/Chrome */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                }
+
+                // 2. Turn off the siren overlay
+                lockdownOverlay.style.display = 'none';
+                mainView.style.display = 'flex';
+                alert("System Access Restored.");
+
+            } else if (userInputs != null) {
+                // INCORRECT PIN ENTERED (and user didn't press cancel)
+                alert("Access Denied. Invalid PIN.");
+                // The siren keeps flashing.
+            }
+        }
+
+        // Optional: Detect if user presses F11 or ESC to exit fullscreen manually,
+        // and immediately re-trigger the overlay or block it (browser dependent).
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && lockdownOverlay.style.display === 'flex') {
+                // User tried to exit fullscreen, try to force it back immediately
+                // Note: Browsers are getting stricter about this.
+                try { document.documentElement.requestFullscreen(); } catch(e) {}
+            }
+        });
+    </script>
+
+</body>
+</html>
